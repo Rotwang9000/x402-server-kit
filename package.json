@@ -1,0 +1,69 @@
+{
+	"name": "x402-server-kit",
+	"version": "0.1.0",
+	"description": "Receive x402 (HTTP 402) micropayments in a Fastify app: facilitator selection (Coinbase CDP or permissionless), a validated paywall config built from a plain routes array, and Bazaar discovery wiring over the official @x402/* packages.",
+	"type": "module",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/Rotwang9000/x402-server-kit.git"
+	},
+	"bugs": {
+		"url": "https://github.com/Rotwang9000/x402-server-kit/issues"
+	},
+	"homepage": "https://github.com/Rotwang9000/x402-server-kit#readme",
+	"main": "./src/index.js",
+	"exports": {
+		".": "./src/index.js"
+	},
+	"files": [
+		"src",
+		"README.md",
+		"LICENSE"
+	],
+	"engines": {
+		"node": ">=20.0.0"
+	},
+	"scripts": {
+		"test": "node --experimental-vm-modules node_modules/.bin/jest",
+		"test:watch": "node --experimental-vm-modules node_modules/.bin/jest --watch"
+	},
+	"dependencies": {
+		"@x402/core": "^2.12.0",
+		"@x402/evm": "^2.12.0",
+		"@x402/extensions": "^2.12.0",
+		"@x402/fastify": "^2.12.0"
+	},
+	"peerDependencies": {
+		"@coinbase/x402": "^2.1.0",
+		"fastify": ">=5.0.0"
+	},
+	"peerDependenciesMeta": {
+		"@coinbase/x402": {
+			"optional": true
+		},
+		"fastify": {
+			"optional": true
+		}
+	},
+	"devDependencies": {
+		"@jest/globals": "^30.1.2",
+		"jest": "^30.1.3"
+	},
+	"keywords": [
+		"x402",
+		"http-402",
+		"micropayments",
+		"payments",
+		"fastify",
+		"coinbase",
+		"cdp",
+		"usdc",
+		"base",
+		"evm",
+		"eip-3009",
+		"agent-payments",
+		"paywall",
+		"bazaar"
+	]
+}
