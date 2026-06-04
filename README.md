@@ -22,7 +22,10 @@ It reads **no `process.env`** and holds **no shared mutable state** — you pass
 including secrets. The heavy `@x402` runtime is loaded **lazily**, so the pure config/price
 helpers stay usable and unit‑testable without paying for the wagmi/viem stack.
 
-> **Status:** extracted from a production deployment; `0.x` while the public API settles.
+> **Status:** powers the x402 paywall on the **Seneschal data API** in production at
+> [api.seneschal.space](https://api.seneschal.space/.well-known/x402) — Private Watch + Penny
+> Oracle micropayments on Base, settled through the Coinbase CDP facilitator. `0.x` while the
+> public API settles.
 
 ## Install
 
