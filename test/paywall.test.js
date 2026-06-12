@@ -189,6 +189,34 @@ describe('discoveryConfigForRouteKey (Bazaar discovery wiring)', () => {
 		expect(discoveryConfigForRouteKey('  get /v1/facts/height ')).toEqual({});
 	});
 
+	test('per-route discovery config merges over the method defaults', () => {
+		const discovery = {
+			inputSchema: { type: 'object', properties: { chain: { type: 'string' } }, required: ['chain'] },
+			output: { schema: { type: 'object', properties: { watchId: { type: 'string' } } } }
+		};
+		expect(discoveryConfigForRouteKey('POST /v1/watch', discovery)).toEqual({ bodyType: 'json', ...discovery });
+		// A GET keeps no bodyType but gains the schemas.
+		expect(discoveryConfigForRouteKey('GET /v1/facts/height', { output: { example: { height: 1 } } }))
+			.toEqual({ output: { example: { height: 1 } } });
+		// Explicit bodyType in discovery wins over the default.
+		expect(discoveryConfigForRouteKey('POST /v1/upload', { bodyType: 'form-data' }))
+			.toEqual({ bodyType: 'form-data' });
+	});
+
+	test('route-level discovery rides through buildX402Config to the table + premiumRoutes', () => {
+		const discovery = { output: { schema: { type: 'object' } } };
+		const cfg = buildX402Config(baseOpts({
+			routes: [
+				{ method: 'GET', path: '/v1/fact', price: '$0.001', discovery },
+				{ method: 'GET', path: '/v1/plain', price: '$0.001' }
+			]
+		}));
+		expect(cfg.routes['GET /v1/fact'].discovery).toEqual(discovery);
+		expect(cfg.routes['GET /v1/plain'].discovery).toBeUndefined();
+		const enriched = cfg.premiumRoutes.find((r) => r.path === '/v1/fact');
+		expect(enriched.discovery).toEqual(discovery);
+	});
+
 	test('every route key yields a Bazaar extension the middleware will catalogue', () => {
 		const cfg = buildX402Config(baseOpts());
 		const routesWithDiscovery = {};

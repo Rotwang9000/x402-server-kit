@@ -119,12 +119,21 @@ export function buildX402Config({
 		assertPrice(price, `${method} ${path}`);
 		const mimeType = r?.mimeType ?? defaultMimeType;
 		const description = r?.description ?? '';
+		// Optional per-route Bazaar discovery enrichment: JSON-schema
+		// fragments (`inputSchema`, `output.schema`, `output.example`,
+		// `pathParamsSchema`…) matching @x402/extensions' Declare*Config
+		// shapes. Indexers grade listings on these — x402scan flags a
+		// missing output schema as an error — so catalogue authors should
+		// supply them for any route they want ranked well. Deep validation
+		// is left to declareDiscoveryExtension at registration time.
+		const discovery = (r?.discovery && typeof r.discovery === 'object') ? r.discovery : null;
 		routeTable[`${method} ${path}`] = {
 			accepts: { scheme: 'exact', network: net, price, payTo, maxTimeoutSeconds },
 			description,
-			mimeType
+			mimeType,
+			...(discovery ? { discovery } : {})
 		};
-		normalised.push(Object.freeze({ method, path, price, description, mimeType }));
+		normalised.push(Object.freeze({ method, path, price, description, mimeType, ...(discovery ? { discovery } : {}) }));
 	}
 	return Object.freeze({
 		enabled: true,
@@ -171,14 +180,18 @@ export async function createFacilitatorClient(x402Cfg, { cdpApiKeyId = '', cdpAp
 }
 
 /**
- * Map a route key ("METHOD /path") to the minimal Bazaar-discovery config
- * handed to `declareDiscoveryExtension`. Body methods need an explicit
- * `bodyType`; query methods need nothing. Pure + exported so the wiring
- * is unit-testable without loading the payment stack.
+ * Map a route key ("METHOD /path") to the Bazaar-discovery config handed
+ * to `declareDiscoveryExtension`. Body methods need an explicit
+ * `bodyType`; query methods need nothing. A route's own `discovery`
+ * object (inputSchema / output / pathParamsSchema…) is merged over the
+ * defaults so catalogue authors can enrich listings without the kit
+ * hard-coding their schemas. Pure + exported so the wiring is
+ * unit-testable without loading the payment stack.
  */
-export function discoveryConfigForRouteKey(routeKey) {
+export function discoveryConfigForRouteKey(routeKey, discovery = null) {
 	const method = String(routeKey).trim().split(/\s+/u, 1)[0].toUpperCase();
-	return BODY_METHODS.has(method) ? { bodyType: 'json' } : {};
+	const base = BODY_METHODS.has(method) ? { bodyType: 'json' } : {};
+	return discovery ? { ...base, ...discovery } : base;
 }
 
 /**
@@ -224,11 +237,15 @@ export async function registerX402(app, x402Cfg, { cdpApiKeyId = '', cdpApiKeySe
 	// can't break verification/settlement.
 	const routesWithDiscovery = {};
 	for (const [key, routeCfg] of Object.entries(x402Cfg.routes)) {
+		// `discovery` is kit-internal metadata, not part of the
+		// @x402/fastify route config — strip it after folding it into
+		// the declared extension.
+		const { discovery, ...middlewareCfg } = routeCfg;
 		routesWithDiscovery[key] = {
-			...routeCfg,
+			...middlewareCfg,
 			extensions: {
 				...(routeCfg.extensions ?? {}),
-				...declareDiscoveryExtension(discoveryConfigForRouteKey(key))
+				...declareDiscoveryExtension(discoveryConfigForRouteKey(key, discovery))
 			}
 		};
 	}
